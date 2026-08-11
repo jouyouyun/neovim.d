@@ -11,6 +11,12 @@ require('lazy').setup({
   { 'nvim-lua/plenary.nvim', lazy = true },
   { 'nvim-tree/nvim-web-devicons', lazy = true },
   {
+    'MeanderingProgrammer/render-markdown.nvim',
+    ft = { 'markdown' },
+    dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' },
+    opts = {},
+  },
+  {
     'nvim-telescope/telescope.nvim',
     cmd = 'Telescope',
     dependencies = { 'nvim-lua/plenary.nvim' },
@@ -37,10 +43,21 @@ require('lazy').setup({
   { 'mg979/vim-visual-multi', event = 'VeryLazy' },
   {
     'nvim-treesitter/nvim-treesitter',
-    build = ':TSUpdate',
-    event = { 'BufReadPost', 'BufNewFile' },
-    opts = { ensure_installed = { 'c', 'cpp', 'css', 'go', 'html', 'javascript', 'json', 'markdown', 'python', 'rust', 'typescript', 'vim', 'vue' }, auto_install = true, highlight = { enable = true }, indent = { enable = true } },
-    config = function(_, opts) require('nvim-treesitter.configs').setup(opts) end,
+    lazy = false,
+    config = function()
+      local treesitter = require('nvim-treesitter')
+      local languages = { 'c', 'cpp', 'css', 'go', 'html', 'javascript', 'json', 'markdown', 'python', 'rust', 'typescript', 'vim', 'vue' }
+      treesitter.setup()
+      vim.api.nvim_create_autocmd('FileType', {
+        group = vim.api.nvim_create_augroup('treesitter_start', { clear = true }),
+        pattern = languages,
+        callback = function(args)
+          if pcall(vim.treesitter.start, args.buf) then
+            vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+          end
+        end,
+      })
+    end,
   },
   { 'windwp/nvim-ts-autotag', ft = { 'html', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact', 'vue' }, opts = {} },
   { 'HiPhish/rainbow-delimiters.nvim', event = { 'BufReadPost', 'BufNewFile' }, config = function() vim.g.rainbow_delimiters = { strategy = { [''] = require('rainbow-delimiters').strategy.global, vim = require('rainbow-delimiters').strategy['local'] }, query = { [''] = 'rainbow-blocks', lua = 'rainbow-blocks' }, priority = { [''] = 110, lua = 210 }, highlight = { 'RainbowRed', 'RainbowYellow', 'RainbowBlue', 'RainbowOrange', 'RainbowGreen', 'RainbowViolet', 'RainbowCyan' } } end },
