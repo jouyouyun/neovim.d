@@ -43,24 +43,13 @@ require('lazy').setup({
   { 'mg979/vim-visual-multi', event = 'VeryLazy' },
   {
     'nvim-treesitter/nvim-treesitter',
+    branch = 'main',
     lazy = false,
-    config = function()
-      local treesitter = require('nvim-treesitter')
-      local languages = { 'c', 'cpp', 'css', 'go', 'html', 'javascript', 'json', 'markdown', 'python', 'rust', 'typescript', 'vim', 'vue' }
-      treesitter.setup()
-      vim.api.nvim_create_autocmd('FileType', {
-        group = vim.api.nvim_create_augroup('treesitter_start', { clear = true }),
-        pattern = languages,
-        callback = function(args)
-          if pcall(vim.treesitter.start, args.buf) then
-            vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
-          end
-        end,
-      })
-    end,
+    build = ':TSUpdate',
+    config = function() require('config.treesitter').setup() end,
   },
   { 'windwp/nvim-ts-autotag', ft = { 'html', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact', 'vue' }, opts = {} },
-  { 'HiPhish/rainbow-delimiters.nvim', event = { 'BufReadPost', 'BufNewFile' }, config = function() vim.g.rainbow_delimiters = { strategy = { [''] = require('rainbow-delimiters').strategy.global, vim = require('rainbow-delimiters').strategy['local'] }, query = { [''] = 'rainbow-blocks', lua = 'rainbow-blocks' }, priority = { [''] = 110, lua = 210 }, highlight = { 'RainbowRed', 'RainbowYellow', 'RainbowBlue', 'RainbowOrange', 'RainbowGreen', 'RainbowViolet', 'RainbowCyan' } } end },
+  { 'HiPhish/rainbow-delimiters.nvim', event = { 'BufReadPost', 'BufNewFile' }, config = function() vim.g.rainbow_delimiters = { strategy = { [''] = require('rainbow-delimiters').strategy.global, vim = require('rainbow-delimiters').strategy['local'] }, query = { [''] = 'rainbow-delimiters', lua = 'rainbow-blocks' }, priority = { [''] = 110, lua = 210 }, highlight = { 'RainbowRed', 'RainbowYellow', 'RainbowBlue', 'RainbowOrange', 'RainbowGreen', 'RainbowViolet', 'RainbowCyan' } } end },
   {
     'williamboman/mason.nvim', cmd = 'Mason', build = ':MasonUpdate', opts = {},
   },
@@ -70,18 +59,24 @@ require('lazy').setup({
     dependencies = { 'williamboman/mason.nvim', 'williamboman/mason-lspconfig.nvim', 'hrsh7th/cmp-nvim-lsp' },
     config = function()
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
-      require('mason-lspconfig').setup({
-        ensure_installed = { 'clangd', 'gopls@v0.16.2', 'pyright', 'ts_ls', 'rust_analyzer', 'lua_ls' },
-      })
-      local servers = { 'clangd', 'gopls', 'pyright', 'ts_ls', 'rust_analyzer', 'lua_ls' }
+      local servers = { 'clangd', 'gopls', 'pyright', 'ts_ls', 'rust_analyzer', 'lua_ls', 'emmet_language_server' }
       for _, server in ipairs(servers) do
         vim.lsp.config(server, { capabilities = capabilities })
         vim.lsp.enable(server)
       end
+      require('mason-lspconfig').setup({
+        ensure_installed = { 'clangd', 'gopls@v0.16.2', 'pyright', 'ts_ls', 'rust_analyzer', 'lua_ls', 'emmet_language_server' },
+      })
     end,
   },
   { 'hrsh7th/nvim-cmp', event = 'InsertEnter', dependencies = { 'hrsh7th/cmp-nvim-lsp', 'hrsh7th/cmp-buffer', 'hrsh7th/cmp-path', 'L3MON4D3/LuaSnip', 'saadparwaiz1/cmp_luasnip' }, config = function() require('config.cmp') end },
   { 'stevearc/conform.nvim', event = { 'BufReadPre', 'BufNewFile' }, opts = { formatters_by_ft = { c = { 'clang_format' }, cpp = { 'clang_format' }, go = { 'gofmt' }, python = { 'ruff_format' }, javascript = { 'prettier' }, typescript = { 'prettier' }, html = { 'prettier' }, css = { 'prettier' }, rust = { 'rustfmt' } }, format_on_save = nil } },
-  { 'olrtg/nvim-emmet', ft = { 'html', 'css', 'vue' }, opts = {} },
+  {
+    'olrtg/nvim-emmet',
+    ft = { 'html', 'css', 'javascriptreact', 'typescriptreact', 'vue' },
+    config = function()
+      vim.keymap.set({ 'n', 'v' }, '<leader>xe', require('nvim-emmet').wrap_with_abbreviation, { desc = 'Wrap with Emmet abbreviation' })
+    end,
+  },
   { "editor-code-assistant/eca-nvim", dependencies = {"MunifTanjim/nui.nvim", "nvim-lua/plenary.nvim", "folke/snacks.nvim"}, opts = { debug = false, behavior = { auto_set_keymaps = true, auto_focus_sidebar = true }}},
 }, { change_detection = { notify = false }, checker = { enabled = false }, install = { missing = true } })

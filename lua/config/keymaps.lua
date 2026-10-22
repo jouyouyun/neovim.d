@@ -2,7 +2,21 @@ local map = vim.keymap.set
 local opts = { noremap = true, silent = true }
 
 map('n', '<leader>w', '<cmd>write!<cr>', opts)
-vim.api.nvim_create_user_command('W', 'write !sudo tee % > /dev/null', {})
+vim.api.nvim_create_user_command('W', function()
+  local filename = vim.api.nvim_buf_get_name(0)
+  if filename == '' or vim.bo.buftype ~= '' then
+    vim.notify('W requires a normal buffer with a filename', vim.log.levels.ERROR)
+    return
+  end
+  vim.cmd('write !sudo tee -- ' .. vim.fn.shellescape(filename, true) .. ' > /dev/null')
+  if vim.v.shell_error ~= 0 then
+    vim.notify('Privileged write failed; buffer edits are still unsaved', vim.log.levels.ERROR)
+    return
+  end
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  vim.cmd('edit!')
+  vim.api.nvim_win_set_cursor(0, cursor)
+end, { desc = 'Write current file using sudo' })
 map('n', '<leader>W', '<cmd>W<cr>', opts)
 map('n', '<leader>q', '<cmd>bdelete<cr>', opts)
 map('n', '<leader>Q', '<cmd>qa!<cr>', opts)
@@ -26,9 +40,9 @@ map('n', '<leader>kw', '<C-w>k', opts)
 map('n', '<leader>jw', '<C-w>j', opts)
 map('n', '<leader>sp', '<cmd>split<cr>', opts)
 map('n', '<leader>vsp', '<cmd>vsplit<cr>', opts)
-map('n', '<leader>ch', '<cmd>ClangdSwitchSourceHeader<cr>', opts)
-map('n', '<leader>vch', '<cmd>vsplit | ClangdSwitchSourceHeader<cr>', opts)
-map('n', '<leader>sch', '<cmd>split | ClangdSwitchSourceHeader<cr>', opts)
+map('n', '<leader>ch', '<cmd>LspClangdSwitchSourceHeader<cr>', opts)
+map('n', '<leader>vch', '<cmd>vsplit | LspClangdSwitchSourceHeader<cr>', opts)
+map('n', '<leader>sch', '<cmd>split | LspClangdSwitchSourceHeader<cr>', opts)
 map('n', '<C-\\>', function()
   local word = vim.fn.expand('<cword>')
   if vim.fn.executable('sdcv') == 1 then vim.fn.jobstart({ 'sdcv', word }, { detach = true }) else vim.notify('sdcv is not installed', vim.log.levels.WARN) end
